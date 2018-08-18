@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/prettyyjnic/redis-clean.svg?branch=master)](https://travis-ci.org/prettyyjnic/redis-clean)
+
 ### 批量安全无阻塞删除redis 的key
 
 #### 安装依赖
