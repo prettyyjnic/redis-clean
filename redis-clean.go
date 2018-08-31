@@ -117,8 +117,7 @@ func delKey(conn *redis.Client, key string) error {
 		goto END
 	}
 	switch keyType {
-	case "string":
-		err = conn.Del(key).Err()
+	case "string":// 在下面删除
 	case "list":
 		var sizes int64
 		sizes, err = conn.LLen(key).Result()
@@ -132,7 +131,6 @@ func delKey(conn *redis.Client, key string) error {
 				goto END
 			}
 		}
-		err = conn.Del(key).Err()
 	case "hash":
 		var cursor uint64
 		var fields []string
@@ -142,7 +140,11 @@ func delKey(conn *redis.Client, key string) error {
 				goto END
 			}
 			if len(fields) > 0 {
-				_, err = conn.HDel(key, fields...).Result()
+				tmp := make([]string, len(fields)/2)
+				for j := 0; j < len(fields); j+=2 {
+					tmp[j/2] = fields[j]
+				}
+				_, err = conn.HDel(key, tmp...).Result()
 				if err != nil {
 					goto END
 				}
@@ -152,7 +154,6 @@ func delKey(conn *redis.Client, key string) error {
 				break;
 			}
 		}
-		err = conn.Del(key).Err()
 	case "set":
 		var cursor uint64
 		var fields []string
@@ -177,7 +178,6 @@ func delKey(conn *redis.Client, key string) error {
 				break;
 			}
 		}
-		err = conn.Del(key).Err()
 	case "zset":
 		var cursor uint64
 		var fields []string
@@ -188,9 +188,9 @@ func delKey(conn *redis.Client, key string) error {
 			}
 			if len(fields) > 0 {
 				var members []interface{}
-				members = make([]interface{}, len(fields))
-				for i := 0; i < len(fields); i++ {
-					members[i] = fields[i]
+				members = make([]interface{}, len(fields)/2)
+				for i := 0; i < len(fields); i+=2 {
+					members[i/2] = fields[i]
 				}
 				_, err = conn.ZRem(key, members...).Result()
 				if err != nil {
@@ -202,12 +202,14 @@ func delKey(conn *redis.Client, key string) error {
 				break;
 			}
 		}
-		err = conn.Del(key).Err()
+
 	case "none":
 		// 已经删除了的
+		goto END
 	default:
 		return errors.New("未知的类型："+keyType)
 	}
+	err = conn.Del(key).Err()
 END:
 	if err != nil {
 		if err == redis.Nil { // 空key
